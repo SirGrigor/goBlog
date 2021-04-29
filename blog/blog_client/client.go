@@ -43,7 +43,7 @@ func main() {
 
 	_, err = c.ReadBlog(
 		context.Background(),
-		&blogpb.ReadBlogRequest{BlogId: "608a9b465fc072108d2273dc"})
+		&blogpb.ReadBlogRequest{BlogId: blogID})
 	if err != nil {
 		fmt.Printf("Error happened while reading: %v", err)
 	}
