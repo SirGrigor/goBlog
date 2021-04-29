@@ -22,14 +22,24 @@ var collection *mongo.Collection
 type server struct {
 }
 
+type blogItem struct {
+	ID       primitive.ObjectID `bson:"_id,omitempty"`
+	AuthorID string             `bson:"author_id"`
+	Content  string             `bson:"content"`
+	Title    string             `bson:"title"`
+}
+
 func (*server) ReadBlog(ctx context.Context, req *blogpb.ReadBlogRequest) (*blogpb.ReadBlogResponse, error) {
-	blogId := req.BlogId
+	log.Println("Read Blog Request")
+
+	blogId := req.GetBlogId()
 	oid, err := primitive.ObjectIDFromHex(blogId)
 	if err != nil {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
 			fmt.Sprintf("Cannot Parse Id: %v", err))
 	}
+
 	data := &blogItem{}
 	filter := bson.D{{"_id", oid}}
 	res := collection.FindOne(context.Background(), filter)
@@ -38,12 +48,13 @@ func (*server) ReadBlog(ctx context.Context, req *blogpb.ReadBlogRequest) (*blog
 			codes.NotFound,
 			fmt.Sprintf("Cannot Find doc with specified ID: %v", err))
 	}
-	return &blogpb.ReadBlogResponse{Blog: &blogpb.Blog{
-		Id:       data.ID.Hex(),
-		AuthorId: data.AuthorID,
-		Title:    data.Title,
-		Content:  data.Content,
-	},
+	return &blogpb.ReadBlogResponse{
+		Blog: &blogpb.Blog{
+			Id:       data.ID.Hex(),
+			AuthorId: data.AuthorID,
+			Title:    data.Title,
+			Content:  data.Content,
+		},
 	}, nil
 }
 
@@ -76,13 +87,6 @@ func (*server) CreateBlog(ctx context.Context, request *blogpb.CreateBlogRequest
 			Content:  blog.Content,
 		},
 	}, nil
-}
-
-type blogItem struct {
-	ID       primitive.ObjectID `bson:"id, omitempty"`
-	AuthorID string             `bson:"author_id"`
-	Content  string             `bson:"content"`
-	Title    string             `bson:"title"`
 }
 
 func connectMongo() *mongo.Client {
