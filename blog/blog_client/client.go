@@ -38,12 +38,20 @@ func main() {
 	//Create Blog
 	createblog := createBlog(err, c, blog)
 	// ReadBlog
+	blogID := createblog.GetBlog().GetId()
 
-	readBlog, err := c.ReadBlog(context.Background(), &blogpb.ReadBlogRequest{BlogId: "21414513"})
+	_, err = c.ReadBlog(
+		context.Background(),
+		&blogpb.ReadBlogRequest{BlogId: "21414513"})
 	if err != nil {
 		fmt.Printf("Error happened while reading: %v", err)
 	}
 
-	readBlogReg = &blogpb.ReadBlogRequest{BlogId: }
-	c.ReadBlog(context.Background(), )
+	readBlogReq := &blogpb.ReadBlogRequest{BlogId: blogID}
+	readBlogResponse, readBlogError := c.ReadBlog(context.Background(), readBlogReq)
+	if readBlogError != nil {
+		fmt.Printf("Error happened while: %v", readBlogError)
+	}
+
+	log.Printf("Blog was Read: %v", readBlogResponse)
 }
