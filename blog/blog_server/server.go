@@ -37,7 +37,7 @@ func (*server) ReadBlog(ctx context.Context, req *blogpb.ReadBlogRequest) (*blog
 	if err != nil {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
-			fmt.Sprintf("Cannot Parse Id: %v", err))
+			fmt.Sprintf("Cannot Parse Id: %v\n", err))
 	}
 
 	data := &blogItem{}
@@ -46,7 +46,7 @@ func (*server) ReadBlog(ctx context.Context, req *blogpb.ReadBlogRequest) (*blog
 	if err := res.Decode(data); err != nil {
 		return nil, status.Errorf(
 			codes.NotFound,
-			fmt.Sprintf("Cannot Find doc with specified ID: %v", err))
+			fmt.Sprintf("Cannot Find doc with specified ID: %v\n", err))
 	}
 	return &blogpb.ReadBlogResponse{
 		Blog: dataToBlogPb(data),
@@ -75,12 +75,12 @@ func (*server) CreateBlog(ctx context.Context, request *blogpb.CreateBlogRequest
 	res, err := collection.InsertOne(context.Background(), data)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal,
-			fmt.Sprintf("Internal error: %v", err))
+			fmt.Sprintf("Internal error: %v\n", err))
 	}
 	oid, ok := res.InsertedID.(primitive.ObjectID)
 	if !ok {
 		return nil, status.Errorf(codes.Internal,
-			fmt.Sprintf("Cannot coverto to OID: %v", err))
+			fmt.Sprintf("Cannot coverto to OID: %v\n", err))
 	}
 
 	return &blogpb.CreateBlogResponse{
@@ -107,10 +107,10 @@ func (*server) UpdateBlog(ctx context.Context, request *blogpb.UpdateBlogRequest
 	filter := bson.D{{"_id", oid}}
 
 	res := collection.FindOne(context.Background(), filter)
-	if err := res.Decode(data); err != nil {
+	if err1 := res.Decode(data); err1 != nil {
 		return nil, status.Errorf(
 			codes.NotFound,
-			fmt.Sprintf("Caanot find blog with specified ID: %v"), err)
+			fmt.Sprintf("Caanot find blog with specified ID: %v\n", err1))
 	}
 
 	data.AuthorID = blog.GetAuthorId()
@@ -121,13 +121,38 @@ func (*server) UpdateBlog(ctx context.Context, request *blogpb.UpdateBlogRequest
 	if updateErr != nil {
 		return nil, status.Errorf(
 			codes.Internal,
-			fmt.Sprintf("Cannot update object in MongoDb: %v"), updateErr)
+			fmt.Sprintf("Cannot update object in MongoDb: %v\n", updateErr))
 	}
 
 	return &blogpb.UpdateBlogResponse{
 		Blog: dataToBlogPb(data),
 	}, nil
 
+}
+
+func (*server) DeleteBlog(ctx context.Context, request *blogpb.DeleteBlogRequest) (*blogpb.DeleteBlogResponse, error) {
+	log.Println("Update blog request")
+	oid, err := primitive.ObjectIDFromHex(request.GetBlogId())
+	if err != nil {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintf("Cannot Parse ID"))
+	}
+
+	filter := bson.D{{"_id", oid}}
+	res, err := collection.DeleteOne(context.Background(), filter)
+
+	if err != nil {
+		return nil, status.Errorf(
+			codes.Internal,
+			fmt.Sprintf("cannot delete object in MongoDB: %v", err))
+	}
+
+	if res.DeletedCount == 0 {
+		return nil, status.Errorf(
+			codes.NotFound,
+			fmt.Sprintf("Cannot find blog in MongoDB: %v", err))
+	}
 }
 
 func connectMongo() *mongo.Client {
@@ -158,7 +183,7 @@ func main() {
 	mongoClient := connectMongo()
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {
-		log.Fatalf("Failed to start server with error: %v", err)
+		log.Fatalf("Failed to start server with error: %v\n", err)
 	}
 
 	log.Println("Blog Server Started")
@@ -168,7 +193,7 @@ func main() {
 	go func() {
 		log.Println("Starting Server...")
 		if err := s.Serve(lis); err != nil {
-			log.Fatalf("failed to serve: %v", err)
+			log.Fatalf("failed to serve: %v\n", err)
 		}
 	}()
 
