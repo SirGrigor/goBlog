@@ -153,6 +153,9 @@ func (*server) DeleteBlog(ctx context.Context, request *blogpb.DeleteBlogRequest
 			codes.NotFound,
 			fmt.Sprintf("Cannot find blog in MongoDB: %v", err))
 	}
+
+	return &blogpb.DeleteBlogResponse{BlogId: request.GetBlogId()}, nil
+
 }
 
 func connectMongo() *mongo.Client {
